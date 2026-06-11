@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 
@@ -8,9 +8,10 @@ class CarCreateSchema(BaseModel):
 
 
 class CarOutSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True) 
     id:int
     model : str
-    decs : str
+    desc : str
 
 
 class CarUpdateSchema(BaseModel):

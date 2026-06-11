@@ -23,6 +23,6 @@ def car_detail_router(car_id:int, db:Session = Depends(get_db)):
 def car_delete_router(car_id:int, db:Session = Depends(get_db)):
     return car_delete(db, car_id)
 
-@router.patch('/update/{car_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.patch('/update/{car_id}', status_code=status.HTTP_200_OK)
 def car_update_router(car_id:int, new_data:CarUpdateSchema, db:Session = Depends(get_db)):
     return car_update(db, car_id, new_data)

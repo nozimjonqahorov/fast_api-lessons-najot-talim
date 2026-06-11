@@ -1,11 +1,11 @@
 from fastapi import status
 from fastapi.exceptions import HTTPException
 from cars.models import Car
-from cars.schema import CarCreateSchema, CarUpdateSchema
+from cars.schema import CarCreateSchema, CarUpdateSchema, CarOutSchema
 from sqlalchemy.orm import Session
 
 
-def car_create(db:Session, car:CarCreateSchema):
+def car_create(db:Session, car:CarCreateSchema)-> dict:
     new_car = Car(
         model = car.model,
         desc = car.desc
@@ -14,85 +14,51 @@ def car_create(db:Session, car:CarCreateSchema):
     db.commit()
     db.refresh(new_car)
 
-    response = {
-        "msg":"car created",
-        "status":status.HTTP_201_CREATED,
-        "id":new_car.id
-
-    }
-
-    return response
+    return {"msg":"car created","id":new_car.id}
 
 
-def car_list(db:Session):
+def car_list(db:Session) -> dict:
     cars = db.query(Car).all()
-    
-    response = {
+    return {
         "msg":"car list",
-        "status":status.HTTP_200_OK,
         "count":len(cars),
-        "cars":cars
+        "cars":[CarOutSchema.model_validate(c) for c in cars]
+        }
 
-    }
-
-    return response
-
-
-
-def car_detail(db:Session, car_id:Car):
+def _get_car_or_404(db:Session, car_id:int)-> Car:
     car = db.query(Car).filter(Car.id == car_id).first()
 
     if not car:
         raise HTTPException(detail="Car not found", status_code=status.HTTP_404_NOT_FOUND)
+    return car
     
-    response = {
+
+def car_detail(db:Session, car_id:int)-> dict:
+    car = _get_car_or_404(db, car_id)
+    return  {
         "msg":"car detail",
-        "status":status.HTTP_200_OK,
-        "car":car
-
+        "car":CarOutSchema.model_validate(car)
     }
 
-    return response
-
-
-def car_delete(db:Session, car_id:Car):
-    car = db.query(Car).filter(Car.id == car_id).first()
-
-    if not car:
-        raise HTTPException(detail="Car not found", status_code=status.HTTP_404_NOT_FOUND)
-    
+def car_delete(db:Session, car_id:Car) -> None:
+    car = _get_car_or_404(db, car_id)
     db.delete(car)
     db.commit()
+    return {"msg":"car deleted"}
 
-    response = {
-        "msg":"car deleted",
-        "status":status.HTTP_204_NO_CONTENT,
-    }
-
-    return response
-
-def car_update(db:Session, car_id:Car, new_data:CarUpdateSchema):
-    car = db.query(Car).filter(Car.id == car_id).first()
-
-    if not car:
-        raise HTTPException(detail="Car not found", status_code=status.HTTP_404_NOT_FOUND)
-    
-    new_model = new_data.get("model", "")
-    new_desc = new_data.get("desc", "")
-    
-    if new_model:
-        car.model = new_model
-
-    if new_desc:
-        car.desc = new_desc
+def car_update(db:Session, car_id:Car, new_data:CarUpdateSchema) -> dict:
+    car = _get_car_or_404(db, car_id)
+    if new_data.model is not None:
+        car.model = new_data.model  
+    if new_data.desc is not None:
+        car.desc = new_data.desc
 
     db.commit()
     db.refresh(car)
 
-    response = {
+    return {
         "msg":"car updated",
-        "status":status.HTTP_200_OK,
-        "car":car
+        "car":CarOutSchema.model_validate(car)
     }
 
-    return response
+     
