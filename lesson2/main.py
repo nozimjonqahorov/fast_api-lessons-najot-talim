@@ -1,11 +1,10 @@
 from fastapi import FastAPI
-import cars.models
-from database import engine
-
+from cars.router import router as car_router
 
 app = FastAPI()
 
-cars.models.Base.metadata.create_all(bind = engine)
+app.include_router(car_router, prefix='/car', tags=['car'])
+
 
 @app.get('/')
 def index():
